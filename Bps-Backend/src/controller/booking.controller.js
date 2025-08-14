@@ -549,10 +549,14 @@ export const getBookingStatusList = async (req, res) => {
 
     const data = validBookings.map((b, i) => ({
       SNo: i + 1,
-      orderBy:
-        b.requestedByRole === 'public'
-          ? 'Third Party'
-          : `${b.createdByRole} ${b.startStation?.stationName || ''}` || 'N/A',
+       orderBy:
+  b.requestedByRole === 'public'
+    ? 'Third Party'                                          
+    : b.createdByRole === 'admin'
+      ? 'Admin'                                               
+      : b.createdByRole === 'supervisor'
+        ? `Supervisor (${b.startStation?.stationName || 'N/A'})` 
+        : `${b.createdByRole} ${b.startStation?.stationName || ''}`.trim() || 'N/A',
       date: b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-CA') : 'N/A',
 
       fromName: b.senderName || 'N/A',

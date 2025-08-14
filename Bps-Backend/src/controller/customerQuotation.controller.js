@@ -10,7 +10,9 @@ const formatQuotations = (quotations) => {
   return quotations.map((q, index) => ({
     "S.No.": index + 1,
     "Booking ID": q.bookingId,
-    "orderBy": `${q.createdByRole} ${q.startStation?.stationName || ''}`,
+    "orderBy": q.createdByRole === "admin"
+      ? "Admin"
+      : `Supervisor ${q.startStation?.stationName || ''}`,
     "Date": q.quotationDate.toLocaleDateString('en-CA'),
     "Name": q.customerId
       ? `${q.customerId.firstName} ${q.customerId.lastName}`
