@@ -20,9 +20,15 @@ export const generateInvoicePDF = async (customer, bookings) => {
         doc.fontSize(16).text('TAX INVOICE', { align: 'center' });
         y += 30;
         doc.fontSize(12);
-        doc.text('Bharat Parcel Services Pvt.Ltd.', 50, y); y += lineHeight;
-        doc.text('332, Kucha Ghasi Ram, Chandni Chowk, Fatehpuri, Delhi -110006', 50, y); y += lineHeight;
-        doc.text('GSTIN: 07AAECB6506F1ZY    PAN: AAECB6506F    SAC CODE: 9968', 50, y); y += lineHeight + 10;
+        const headerBooking = bookings?.[0] || {};
+const stationName = headerBooking?.startStation?.stationName || 'N/A';
+const stationAddress = headerBooking?.startStation?.address || 'N/A';
+const stationGST = headerBooking?.startStation?.gst || 'N/A';
+const stationContact = headerBooking?.startStation?.contact || 'N/A';
+        doc.text(`Bharat Parcel Services Pvt.Ltd.${stationName}`, 50, y); y += lineHeight;
+         doc.text(stationAddress, 50, y); y += lineHeight;
+        doc.text(`GSTIN: ${stationGST}    PAN: AAECB6506F    SAC CODE: 9968`, 50, y); y += lineHeight;
+        doc.text(`Contact: ${stationContact}`, 50, y); y += lineHeight + 10;
 
         // Customer Info
         const fullName = `${customer.firstName || ''}${customer.middleName || ''}${customer.lastName || ''}`.trim();

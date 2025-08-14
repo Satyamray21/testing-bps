@@ -1255,9 +1255,12 @@ const customer = await Customer.findOne({
     to.setHours(23, 59, 59, 999); // end of day
 
     const bookings = await Booking.find({
-      customerId: customer._id,
-      bookingDate: { $gte: from, $lte: to },
-    }).sort({ bookingDate: 1 });
+  customerId: customer._id,
+  bookingDate: { $gte: from, $lte: to },
+})
+.populate('startStation') // <-- so PDF gets stationName, address, gst, contact
+.sort({ bookingDate: 1 });
+
 
     if (!bookings.length) {
       // Fetch all bookings for debugging in API response
