@@ -1215,21 +1215,31 @@ export const generateInvoiceByCustomer = async (req, res) => {
         data: { customerName, fromDate, toDate }
       });
     }
+const cleanName = customerName
+  .trim()
+  .replace(/\s+/g, "\\s+"); // collapse spaces/tabs in regex
 
-    // Step 1: Find Customer
-    const customer = await Customer.findOne({
-      $or: [
-        {
-          $expr: {
-            $regexMatch: {
-              input: { $concat: ["$firstName", "$middleName", "$lastName"] },
-              regex: customerName,
-              options: "i"
-            }
+const customer = await Customer.findOne({
+  $expr: {
+    $regexMatch: {
+      input: {
+        $trim: {
+          input: {
+            $concat: [
+              "$firstName", " ",
+              { $ifNull: ["$middleName", ""] }, " ",
+              "$lastName"
+            ]
           }
         }
-      ]
-    });
+      },
+      regex: cleanName,
+      options: "i"
+    }
+  }
+});
+
+
 
 
     if (!customer) {
