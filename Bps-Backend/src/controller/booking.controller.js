@@ -1129,6 +1129,7 @@ export const getCADetailsSummary = async (req, res) => {
           totalSgstPercent: { $sum: "$sgst" },
           totalIgstPercent: { $sum: "$igst" },
           senderNames: { $addToSet: "$senderName" },
+           senderGst: {$addToSet: "$senderGgt" },
           customerNames: {
             $addToSet: {
               $concat: [
@@ -1172,6 +1173,7 @@ export const getCADetailsSummary = async (req, res) => {
           integratedTax: 1,
           invoiceAmount: 1,
           senderNames: 1,
+          senderGst: 1,
           customerNames: 1,
           particulars: { $literal: "Total" },
           gst: { $literal: "" },
