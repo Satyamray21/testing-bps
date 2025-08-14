@@ -241,6 +241,18 @@ export const caReport = createAsyncThunk(
   }
 )
 
+export const fetchPendingCustomers = createAsyncThunk(
+  "pendingCustomers/fetchPendingCustomers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/pending-amount`); 
+      // Adjust URL to match your backend route
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch pending customers");
+    }
+  }
+);
 
 const initialState = {
   list: [],
@@ -252,7 +264,8 @@ const initialState = {
   activeDeliveriesCount: 0,
   cancelledDeliveriesCount: 0,
   totalRevenue: 0,
-
+  customers: [],
+    summary: null,
   form: {
     startStation: "",
     endStation: "",
@@ -507,7 +520,21 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      ;
+       .addCase(fetchPendingCustomers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPendingCustomers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.customers = action.payload.customers || [];
+        state.summary = action.payload.summary || null;
+        state.error = null;
+      })
+      .addCase(fetchPendingCustomers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Something went wrong";
+      });
+      
   }
 })
 export const { setFormField, resetForm, addBooking, setBooking, clearViewedBooking } = bookingSlice.actions;

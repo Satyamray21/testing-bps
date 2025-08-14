@@ -207,6 +207,16 @@ const BookingSchema = new mongoose.Schema(
         return this.grandTotal;
       }
     },
+// Payments
+paidAmount: {
+  type: Number,
+  default: 0
+},
+paymentStatus: {
+  type: String,
+  enum: ['Paid', 'Partial', 'Unpaid'],
+  default: 'Unpaid'
+},
 
     // Status
     activeDelivery: {

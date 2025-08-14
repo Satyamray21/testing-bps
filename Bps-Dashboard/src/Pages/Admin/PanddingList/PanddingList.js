@@ -1,46 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
     Box, Typography, Paper, Table, TableHead,
     TableRow, TableCell, TableBody, TextField
 } from '@mui/material';
-
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPendingCustomers } from  '../../../features/booking/bookingSlice';
 const PanddingList = () => {
 
-    const customers = [
-        {
-            customerId: "1",
-            name: "SEASONS  ENTERPRISES  PVT LTD",
-            email: "seasons@gmail.com",
-            contact: 9819684214,
-            totalBookings: 3,
-            unpaidBookings: 3,
-            totalAmount: 5054,
-            totalPaid: 0,
-            pendingAmount: 5054
-        },
-        {
-            customerId: "2",
-            name: "Global Tech Pvt Ltd",
-            email: "globaltech@gmail.com",
-            contact: 9876543210,
-            totalBookings: 5,
-            unpaidBookings: 2,
-            totalAmount: 8000,
-            totalPaid: 3000,
-            pendingAmount: 5000
-        },
-        {
-            customerId: "3",
-            name: "Shubham Transport",
-            email: "shubham@gmail.com",
-            contact: 9900112233,
-            totalBookings: 2,
-            unpaidBookings: 1,
-            totalAmount: 2000,
-            totalPaid: 1000,
-            pendingAmount: 1000
-        }
-    ];
+ const dispatch = useDispatch();
+
+  const { customers, loading, error } = useSelector(
+    (state) => state.bookings
+  );
+
+
+
+  useEffect(() => {
+    dispatch(fetchPendingCustomers());
+  }, [dispatch]);
 
 
     const [searchTerm, setSearchTerm] = useState('');

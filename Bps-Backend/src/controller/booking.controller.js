@@ -7,6 +7,8 @@ import { sendBookingConfirmation } from './whatsappController.js'
 import { sendWhatsAppMessage } from '../services/whatsappServices.js'
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { generateInvoicePDF } from '../utils/invoiceGenerator.js';
+import {asyncHandler} from "../utils/asyncHandler.js";
+
 async function resolveStation(name) {
   const station = await Station.findOne({ stationName: new RegExp(`^${name}$`, 'i') });
   if (!station) throw new Error(`Station "${name}" not found`);
@@ -1380,3 +1382,92 @@ export const getAllCustomersPendingAmounts = async (req, res) => {
     });
   }
 };
+
+
+
+
+export const receiveCustomerPayment = asyncHandler(async (req, res) => {
+  const { customerId } = req.params;
+  let { amount } = req.body;
+
+  if (!amount || amount <= 0) {
+    throw new ApiError(400, "Payment amount must be greater than 0");
+  }
+
+  // Step 1: Fetch all delivered bookings with pending amount for this customer
+  const bookings = await Booking.find({
+    customerId,
+    isDelivered: true,
+    $expr: { $lt: ["$paidAmount", "$grandTotal"] } // paidAmount < grandTotal
+  }).sort({ bookingDate: 1 }); // Oldest first
+
+  if (!bookings.length) {
+    throw new ApiError(404, "No pending bookings found for this customer");
+  }
+
+  // Step 2: Apply payment
+  let remainingPayment = amount;
+
+  for (let booking of bookings) {
+    const pendingForBooking = booking.grandTotal - (booking.paidAmount || 0);
+
+    if (remainingPayment <= 0) break;
+
+    if (remainingPayment >= pendingForBooking) {
+      // Fully pay this booking
+      booking.paidAmount = booking.grandTotal;
+      booking.paymentStatus = "Paid";
+      remainingPayment -= pendingForBooking;
+    } else {
+      // Partially pay this booking
+      booking.paidAmount = (booking.paidAmount || 0) + remainingPayment;
+      booking.paymentStatus = "Partial";
+      remainingPayment = 0;
+    }
+
+    await booking.save();
+  }
+
+  // Step 3: Calculate updated pending stats for the customer
+  const updatedStats = await Booking.aggregate([
+    {
+      $match: {
+        customerId: bookings[0].customerId,
+        isDelivered: true
+      }
+    },
+    {
+      $group: {
+        _id: "$customerId",
+        totalGrandTotal: { $sum: "$grandTotal" },
+        totalAmountPaid: { $sum: "$paidAmount" },
+        unpaidBookings: {
+          $sum: {
+            $cond: [{ $ne: ["$paymentStatus", "Paid"] }, 1, 0]
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        totalAmount: "$totalGrandTotal",
+        totalPaid: "$totalAmountPaid",
+        pendingAmount: { $subtract: ["$totalGrandTotal", "$totalAmountPaid"] },
+        unpaidBookings: 1
+      }
+    }
+  ]);
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        amountReceived: amount - remainingPayment,
+        remainingPaymentNotUsed: remainingPayment,
+        updatedStats: updatedStats[0] || {}
+      },
+      "Payment recorded successfully"
+    )
+  );
+});
