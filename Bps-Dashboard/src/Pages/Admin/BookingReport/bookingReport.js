@@ -89,7 +89,7 @@ const BookingReport = () => {
 
         const tableBody = summary.map((item, idx) => [
             item.senderNames?.[0] || "",
-            item.gst || "",
+            item.senderGst || "",
             item.voucherCount || 0,
             item.taxableValue?.toLocaleString() || "0",
             item.integratedTax?.toLocaleString() || "0",
@@ -211,24 +211,26 @@ const BookingReport = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>senderNames</TableCell>
-                                <TableCell>customerNames</TableCell>
-                                <TableCell>startStation</TableCell>
-                                <TableCell>endStation</TableCell>
-                                <TableCell>voucherCount</TableCell>
-                                <TableCell>taxableValue</TableCell>
-                                <TableCell>centralTax</TableCell>
-                                <TableCell>stateTax</TableCell>
-                                <TableCell>integratedTax</TableCell>
-                                <TableCell>invoiceAmount</TableCell>
-                                <TableCell>cessAmount</TableCell>
+                                
+                                <TableCell>CustomerName</TableCell>
+                                <TableCell>Sender Gst</TableCell>
+                                <TableCell>StartStation</TableCell>
+                                <TableCell>EndStation</TableCell>
+                                <TableCell>VoucherCount</TableCell>
+                                <TableCell>TaxableValue</TableCell>
+                                <TableCell>CentralTax</TableCell>
+                                <TableCell>StateTax</TableCell>
+                                <TableCell>IntegratedTax</TableCell>
+                                <TableCell>InvoiceAmount</TableCell>
+                                <TableCell>CessAmount</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {summary.map((row, idx) => (
                                 <TableRow key={idx}>
-                                    <TableCell>{row.senderNames?.join(', ')}</TableCell>
+                                    
                                     <TableCell>{row.customerNames?.join(', ')}</TableCell>
+                                    <TableCell>{row.senderGst}</TableCell>
                                     <TableCell>{row.startStation}</TableCell>
                                     <TableCell>{row.endStation}</TableCell>
                                     <TableCell>{row.voucherCount}</TableCell>
