@@ -1343,14 +1343,21 @@ export const getAllCustomersPendingAmounts = async (req, res) => {
           _id: 0,
           customerId: "$_id",
           name: {
-            $concat: [
-              "$customer.firstName",
-              " ",
-              { $ifNull: ["$customer.middleName", ""] },
-              { $cond: [{ $gt: [{ $strLenCP: "$customer.middleName" }, 0] }, " ", ""] },
-              "$customer.lastName"
-            ]
-          },
+  $concat: [
+    "$customer.firstName",
+    " ",
+    { $ifNull: ["$customer.middleName", ""] },
+    {
+      $cond: [
+        { $gt: [{ $strLenCP: { $ifNull: ["$customer.middleName", ""] } }, 0] },
+        " ",
+        ""
+      ]
+    },
+    "$customer.lastName"
+  ]
+},
+
           email: "$customer.emailId",
           contact: "$customer.contactNumber",
           totalBookings: "$bookingCount",
