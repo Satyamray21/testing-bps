@@ -27,8 +27,8 @@ export const generateInvoicePDF = async (customer, bookings) => {
         // Customer Info
         const fullName = `${customer.firstName || ''}${customer.middleName || ''}${customer.lastName || ''}`.trim();
         const partyAddress = (customer.senderLocality || customer.address || 'N/A').replace(/\r?\n/g, ', ');
-        const senderState = customer.fromState || 'N/A';
-        const senderGst = customer.senderGgt || 'N/A';
+        const senderState = customer.state || 'N/A';
+        const senderGst = customer.gstNumber || 'N/A';
 
         doc.text(`Party Name: ${fullName}`, 50, y); y += lineHeight;
         doc.text(`Party Address: ${partyAddress}`, 50, y); y += lineHeight;
