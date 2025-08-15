@@ -113,7 +113,13 @@ const calculateTotals = (values) => {
   const sgst = (Number(values.sgst || 0) / 100) * billTotal;
   const igst = (Number(values.igst || 0) / 100) * billTotal;
 
-  const grandTotal = billTotal + cgst + sgst + igst;
+  let grandTotal = billTotal + cgst + sgst + igst;
+
+  // --- Round Off Calculation ---
+  const roundedGrandTotal = Math.round(grandTotal); // round to nearest whole number
+  const roundOff = (roundedGrandTotal - grandTotal).toFixed(2);
+
+  grandTotal = roundedGrandTotal; // update grand total to rounded value
 
   return {
     billTotal: billTotal.toFixed(2),
@@ -122,8 +128,10 @@ const calculateTotals = (values) => {
     cgst: cgst.toFixed(2),
     sgst: sgst.toFixed(2),
     igst: igst.toFixed(2),
+    roundOff
   };
 };
+
 
 
 const BookingForm = () => {
@@ -751,18 +759,20 @@ const EffectSyncCities = ({ values, dispatch, setSenderCities, setReceiverCities
 };
 const EffectSyncTotals = ({ values, setFieldValue }) => {
   useEffect(() => {
-    const totals = calculateTotals(values);
-    setFieldValue("billTotal", totals.billTotal);
-    setFieldValue("grandTotal", totals.grandTotal);
-  }, [
-    values.items,
-    values.freight,
-    values.ins_vpp,
-    values.cgst,
-    values.sgst,
-    values.igst,
-    setFieldValue
-  ]);
+  const totals = calculateTotals(values);
+  setFieldValue("billTotal", totals.billTotal);
+  setFieldValue("grandTotal", totals.grandTotal);
+  setFieldValue("roundOff", totals.roundOff);
+}, [
+  values.items,
+  values.freight,
+  values.ins_vpp,
+  values.cgst,
+  values.sgst,
+  values.igst,
+  setFieldValue
+]);
+
 
   return null;
 };
