@@ -266,28 +266,31 @@ BookingSchema.pre('validate', function (next) {
 });
 
 // Calculate totals before saving
+// Calculate totals before saving
 BookingSchema.pre('save', function (next) {
-  // Calculate total from all items
-  const itemAmounts = this.items.map(item => item.amount || 0);
-  const totalItemAmount = itemAmounts.reduce((sum, val) => sum + val, 0);
+  // Preserve billTotal from frontend if provided, otherwise calculate from items
+  if ((this.billTotal === undefined || this.billTotal === null) && Array.isArray(this.items)) {
+    const itemAmounts = this.items.map(item => Number(item.amount) || 0);
+    this.billTotal = itemAmounts.reduce((sum, val) => sum + val, 0);
+  }
 
-  // Set billTotal
-  this.billTotal = totalItemAmount;
+  // Preserve grandTotal from frontend if provided, otherwise calculate
+  if (this.grandTotal === undefined || this.grandTotal === null) {
+    this.grandTotal =
+      (this.billTotal || 0) +
+      (Number(this.freight) || 0) +
+      (Number(this.ins_vpp) || 0) +
+      (Number(this.cgst) || 0) +
+      (Number(this.sgst) || 0) +
+      (Number(this.igst) || 0);
+  }
 
-  // Calculate grandTotal
-  this.grandTotal =
-    this.billTotal +
-    (this.freight || 0) +
-    (this.ins_vpp || 0) +
-    (this.cgst || 0) +
-    (this.sgst || 0) +
-    (this.igst || 0);
-
-  // Assign revenue
-  this.computedTotalRevenue = this.grandTotal;
+  // Assign computed revenue (use grandTotal directly)
+  this.computedTotalRevenue = this.grandTotal || 0;
 
   next();
 });
+
 
 const Booking = mongoose.model('Booking', BookingSchema);
 export default Booking;

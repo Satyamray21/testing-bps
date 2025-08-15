@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
-    Box, Typography, Grid, TextField, Paper, Button,
+    Box, Typography, Grid, TextField, Paper, Button,MenuItem,
     Table, TableHead, TableRow, TableCell, TableBody, Divider
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { caReport } from "../../../features/booking/bookingSlice";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
+import { fetchStations } from '../../../features/stations/stationSlice'
 const BookingReport = () => {
     const [fromDate, setFromDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
@@ -19,8 +19,10 @@ const BookingReport = () => {
     const dispatch = useDispatch();
     const { list5 } = useSelector((state) => state.bookings);
     const summary = list5?.summary || [];
-
-
+    const { list: stations } = useSelector((state) => state.stations);
+useEffect(() => {
+    dispatch(fetchStations());
+  }, [dispatch]);
     const handleSubmit = async () => {
         if (!fromDate || !endDate) {
             alert("Please select both dates");
@@ -162,19 +164,33 @@ const BookingReport = () => {
                 <Grid container spacing={2} alignItems={'center'}>
                     <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
+                        select
                             label="From City"
                             fullWidth
                             value={fromCity}
                             onChange={(e) => setFromCity(e.target.value)}
-                        />
+                        >
+                        {stations.map((station) => (
+                                              <MenuItem key={station.stationId || station.sNo} value={station.stationName}>
+                                                {station.stationName}
+                                              </MenuItem>
+                                            ))}
+                                            </TextField>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
+                        select
                             label="To City"
                             fullWidth
                             value={toCity}
                             onChange={(e) => setToCity(e.target.value)}
-                        />
+                        >
+                            {stations.map((station) => (
+                                              <MenuItem key={station.stationId || station.sNo} value={station.stationName}>
+                                                {station.stationName}
+                                              </MenuItem>
+                                            ))}
+                                            </TextField>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                         <LocalizationProvider dateAdapter={AdapterDateFns}>
