@@ -8,7 +8,7 @@ import { sendWhatsAppMessage } from '../services/whatsappServices.js'
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { generateInvoicePDF } from '../utils/invoiceGenerator.js';
 import {asyncHandler} from "../utils/asyncHandler.js";
-
+import mongoose from "mongoose"
 async function resolveStation(name) {
   const station = await Station.findOne({ stationName: new RegExp(`^${name}$`, 'i') });
   if (!station) throw new Error(`Station "${name}" not found`);
@@ -937,47 +937,46 @@ export const getBookingSummaryByDate = async (req, res) => {
       return res.status(400).json({ message: "Invalid date format" });
     }
 
-
-    const query = {
-      bookingDate: { $gte: from, $lte: to }
-    };
-
+    const query = { bookingDate: { $gte: from, $lte: to } };
     if (user.role === "supervisor") {
       query.createdByUser = user._id;
     }
 
     const bookings = await Booking.find(query).sort({ bookingDate: -1 });
 
-    // Transform bookings to include detailed payment breakdown
-    const transformedBookings = bookings.map(booking => {
-      const paidItems = booking.items.filter(item => item.toPay === "paid");
-      const toPayItems = booking.items.filter(item => item.toPay === "pay");
+    const transformedBookings = bookings.map((booking) => {
+  const grandTotal = booking.grandTotal || 0;
 
-      const paidAmount = paidItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-      const toPayAmount = toPayItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const paidAmount =
+    booking.totalPaidAmount ||
+    booking.paidAmount ||
+    (booking.payments?.reduce((sum, p) => sum + (p.amount || 0), 0)) ||
+    0;
 
-      return {
-        ...booking.toObject(),
-        // New payment fields
-        paid: paidAmount,
-        toPay: toPayAmount,
-        // Existing fields
-        paidAmount, // Keeping for backward compatibility
-        toPayAmount, // Keeping for backward compatibility
-        itemsCount: booking.items?.length || 0,
-        // Additional calculated fields
-        paymentStatus: paidAmount > 0 ? (toPayAmount > 0 ? "Partial" : "Paid") : "Unpaid"
-      };
-    });
+  const toPayAmount = Math.max(grandTotal - paidAmount, 0);
 
-    // Calculate comprehensive summary
+  return {
+    ...booking.toObject(),
+    grandTotal,
+    paid: paidAmount,
+    toPay: toPayAmount,
+    itemsCount: booking.items?.length || 0,
+    paymentStatus:
+      paidAmount >= grandTotal ? "Paid" :
+      paidAmount > 0 ? "Partial" :
+      "Unpaid"
+  };
+});
+
+
+    // Calculate totals
     const summary = {
       totalPaid: transformedBookings.reduce((sum, b) => sum + b.paid, 0),
       totalToPay: transformedBookings.reduce((sum, b) => sum + b.toPay, 0),
       totalBookings: transformedBookings.length,
-      paidBookings: transformedBookings.filter(b => b.paid > 0 && b.toPay === 0).length,
+      paidBookings: transformedBookings.filter(b => b.paid >= b.grandTotal).length,
       unpaidBookings: transformedBookings.filter(b => b.paid === 0).length,
-      partialBookings: transformedBookings.filter(b => b.paid > 0 && b.toPay > 0).length
+      partialBookings: transformedBookings.filter(b => b.paid > 0 && b.paid < b.grandTotal).length
     };
 
     res.status(200).json({
@@ -1001,6 +1000,7 @@ export const getBookingSummaryByDate = async (req, res) => {
     });
   }
 };
+
 
 
 
