@@ -6,7 +6,9 @@ import { User } from '../model/user.model.js'
 import { sendBookingConfirmation } from './whatsappController.js'
 import { sendWhatsAppMessage } from '../services/whatsappServices.js'
 import { ApiResponse } from "../utils/ApiResponse.js"
-import { generateInvoicePDF } from '../utils/invoiceGenerator.js';
+import { generateInvoiceNumber } from "../utils/invoiceNumber.js";
+import { generateInvoicePDF } from "../utils/invoiceGenerator.js"; // adjust path
+
 import {asyncHandler} from "../utils/asyncHandler.js";
 import mongoose from "mongoose"
 async function resolveStation(name) {
@@ -1284,9 +1286,13 @@ const customer = await Customer.findOne({
         })),
       });
     }
+const headerBooking = bookings?.[0];
+    const stationName = headerBooking?.startStation?.stationName || "NA";
 
+    // ✅ Generate invoice number per station
+    const invoiceNo = await generateInvoiceNumber(stationName);
     // Step 3: Generate PDF
-    const pdfBuffer = await generateInvoicePDF(customer, bookings);
+    const pdfBuffer = await generateInvoicePDF(customer, bookings,invoiceNo);
 
     res.set({
       'Content-Type': 'application/pdf',

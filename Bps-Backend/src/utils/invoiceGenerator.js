@@ -2,7 +2,7 @@ import PDFDocument from 'pdfkit';
 import pkg from 'pdfkit-table';
 const { Table } = pkg;
 
-export const generateInvoicePDF = async (customer, bookings) => {
+export const generateInvoicePDF = async (customer, bookings,invoiceNo) => {
     const doc = new PDFDocument({ margin: 40 });
     const buffers = [];
 
@@ -19,8 +19,7 @@ export const generateInvoicePDF = async (customer, bookings) => {
         const stationName = headerBooking?.startStation?.stationName || 'Bharat Parcel Services Pvt.Ltd.';
         const stationAddress = headerBooking?.startStation?.address || '332,Kucha Ghasi Ram,Chandni Chowk., Fatehpuri,Delhi -110006';
         const stationGST = headerBooking?.startStation?.gst || '07AAECB6506F1ZY';
-        const stationContact = headerBooking?.startStation?.contact || '011-23955385,23830010';
-        const invoiceNo = headerBooking?.bookingId || 'BPS/DL/0001';
+        const stationContact = headerBooking?.startStation?.contact || '011-23955385,23830010'
         const stateCode = '07'; // from booking or static if needed
 
         const today = new Date();
