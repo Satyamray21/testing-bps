@@ -1560,6 +1560,42 @@ export const getInvoicesByFilter = async (req, res) => {
       },
       { $unwind: { path: "$station", preserveNullAndEmptyArrays: true } },
       {
+        $addFields: {
+          grandTotal: { $ifNull: ["$grandTotal", 0] },
+          paidAmount: {
+            $ifNull: [
+              { $cond: [{ $gt: ["$totalPaidAmount", 0] }, "$totalPaidAmount", "$paidAmount"] },
+              {
+                $reduce: {
+                  input: { $ifNull: ["$payments", []] },
+                  initialValue: 0,
+                  in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          toPayAmount: {
+            $cond: [
+              { $gt: [{ $subtract: ["$grandTotal", "$paidAmount"] }, 0] },
+              { $subtract: ["$grandTotal", "$paidAmount"] },
+              0
+            ]
+          },
+          debit: {
+            $cond: [
+              { $gt: [{ $subtract: ["$grandTotal", "$paidAmount"] }, 0] },
+              { $subtract: ["$grandTotal", "$paidAmount"] },
+              0
+            ]
+          },
+          credit: "$paidAmount"
+        }
+      },
+      {
         $group: {
           _id: { customerId: "$customer._id", stationId: "$station._id" },
           customerName: { $first: { $concat: ["$customer.firstName", " ", "$customer.lastName"] } },
@@ -1570,9 +1606,13 @@ export const getInvoicesByFilter = async (req, res) => {
               bookingId: "$_id",
               bookingDate: "$bookingDate",
               invoiceNo: "$invoiceNo",
-              billTotal: "$billTotal"
+              billTotal: "$billTotal",
+              debit: "$debit",
+              credit: "$credit"
             }
-          }
+          },
+          totalDebit: { $sum: "$debit" },
+          totalCredit: { $sum: "$credit" }
         }
       },
       { $sort: { "invoices.bookingDate": 1 } }
@@ -1587,10 +1627,15 @@ export const getInvoicesByFilter = async (req, res) => {
       });
     }
 
-    res.json({ message: "Invoices fetched successfully", count: invoices.length, data: invoices });
+    res.json({
+      message: "Invoices fetched successfully",
+      count: invoices.length,
+      data: invoices
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || "Server Error", error: true });
   }
 };
+
 
 
