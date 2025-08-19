@@ -239,6 +239,7 @@ paymentStatus: {
 invoiceNumber: { type: String, index: true, sparse: true }, // not unique because a single invoice can cover many bookings
 invoiceRef:     { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
 invoiceNo: { type: String, default: null },
+billDate:  { type: Date },    
     createdByRole: {
       type: String,
       enum: ['admin', 'supervisor'],
