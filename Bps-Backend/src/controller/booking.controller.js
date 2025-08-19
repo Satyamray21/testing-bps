@@ -1292,9 +1292,10 @@ const headerBooking = bookings?.[0];
 
     // ✅ Generate invoice number per station
     const invoiceNo = await generateInvoiceNumber(stationName);
+    const billDate = new Date();
      await Booking.updateMany(
       { _id: { $in: bookings.map(b => b._id) } },
-      { $set: { invoiceNo } }
+      { $set: { invoiceNo,billDate } }
     );
     // Step 3: Generate PDF
     const pdfBuffer = await generateInvoicePDF(customer, bookings,invoiceNo);
@@ -1592,7 +1593,8 @@ export const getInvoicesByFilter = async (req, res) => {
               0
             ]
           },
-          credit: "$paidAmount"
+          credit: "$paidAmount",
+           vchType: "GST Service Invoice",
         }
       },
       {
@@ -1606,6 +1608,8 @@ export const getInvoicesByFilter = async (req, res) => {
               bookingId: "$_id",
               bookingDate: "$bookingDate",
               invoiceNo: "$invoiceNo",
+              billDate:"$billDate",
+              vchType: "$vchType",
               billTotal: "$billTotal",
               debit: "$debit",
               credit: "$credit"
