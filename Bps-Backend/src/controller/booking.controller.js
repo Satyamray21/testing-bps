@@ -8,6 +8,7 @@ import { sendWhatsAppMessage } from '../services/whatsappServices.js'
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { generateInvoiceNumber } from "../utils/invoiceNumber.js";
 import { generateInvoicePDF } from "../utils/invoiceGenerator.js"; // adjust path
+import moment from 'moment';
 
 import {asyncHandler} from "../utils/asyncHandler.js";
 import mongoose from "mongoose"
@@ -1291,6 +1292,10 @@ const headerBooking = bookings?.[0];
 
     // ✅ Generate invoice number per station
     const invoiceNo = await generateInvoiceNumber(stationName);
+     await Booking.updateMany(
+      { _id: { $in: bookings.map(b => b._id) } },
+      { $set: { invoiceNo } }
+    );
     // Step 3: Generate PDF
     const pdfBuffer = await generateInvoicePDF(customer, bookings,invoiceNo);
 
@@ -1503,3 +1508,89 @@ export const receiveCustomerPayment = asyncHandler(async (req, res) => {
     )
   );
 });
+
+
+
+
+
+export const getInvoicesByFilter = async (req, res) => {
+  try {
+    const { fromDate, toDate, startStation } = req.body;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "fromDate and toDate are required" });
+    }
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999);
+
+    // base match
+    const matchStage = { bookingDate: { $gte: from, $lte: to } };
+
+    let stationDoc = null;
+    if (startStation) {
+      // try to resolve station by name (case-insensitive)
+      stationDoc = await Station.findOne({ stationName: new RegExp(`^${startStation}$`, "i") });
+      if (stationDoc) {
+        matchStage.startStation = stationDoc._id;
+      } else {
+        return res.status(404).json({ message: `Station '${startStation}' not found` });
+      }
+    }
+
+    const invoices = await Booking.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customer"
+        }
+      },
+      { $unwind: "$customer" },
+      {
+        $lookup: {
+          from: "stations",
+          localField: "startStation",
+          foreignField: "_id",
+          as: "station"
+        }
+      },
+      { $unwind: { path: "$station", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: { customerId: "$customer._id", stationId: "$station._id" },
+          customerName: { $first: { $concat: ["$customer.firstName", " ", "$customer.lastName"] } },
+          gstNumber: { $first: "$customer.gstNumber" },
+          stationName: { $first: "$station.stationName" },
+          invoices: {
+            $push: {
+              bookingId: "$_id",
+              bookingDate: "$bookingDate",
+              invoiceNo: "$invoiceNo",
+              billTotal: "$billTotal"
+            }
+          }
+        }
+      },
+      { $sort: { "invoices.bookingDate": 1 } }
+    ]);
+
+    if (!invoices.length) {
+      return res.status(404).json({
+        message: "No invoices found in given filter",
+        fromDate,
+        toDate,
+        startStation,
+      });
+    }
+
+    res.json({ message: "Invoices fetched successfully", count: invoices.length, data: invoices });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Server Error", error: true });
+  }
+};
+
+

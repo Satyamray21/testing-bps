@@ -24,7 +24,8 @@ import {
   getCADetailsSummary,
   generateInvoiceByCustomer,
   getAllCustomersPendingAmounts,
-  receiveCustomerPayment
+  receiveCustomerPayment,
+  getInvoicesByFilter
 } from '../controller/booking.controller.js';
 
 import { parseFormData } from "../middleware/multerParser.middleware.js";
@@ -42,7 +43,7 @@ router.post('/send-booking-email/:bookingId', sendBookingEmailById);
 router.patch('/reject/:bookingId', rejectThirdPartyBookingRequest);
 router.get('/summary', customerWiseData);
 router.get('/pending-amount',getAllCustomersPendingAmounts);
-
+router.post('/invoice-list',getInvoicesByFilter);
 router.post('/payment/:customerId',receiveCustomerPayment)
 //  CRUD routes AFTER static routes
 router.post('/public', createPublicBooking);
