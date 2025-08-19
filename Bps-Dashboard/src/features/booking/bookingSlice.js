@@ -269,6 +269,23 @@ export const receiveCustomerPayment = createAsyncThunk(
     }
   }
 );
+export const fetchInvoicesByFilter = createAsyncThunk(
+  "invoices/fetchByFilter",
+  async ({ fromDate, toDate, startStation }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${BASE_URL}/invoice-list`, {
+        fromDate,
+        toDate,
+        startStation
+      });
+      return response.data; // { message, count, data }
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message || "Something went wrong"
+      );
+    }
+  }
+);
 const initialState = {
   list: [],
   list2: [],
@@ -279,6 +296,12 @@ const initialState = {
   activeDeliveriesCount: 0,
   cancelledDeliveriesCount: 0,
   totalRevenue: 0,
+  data: [],
+  count: 0,
+  loading: false,
+  error: null,
+  totalDebit: 0,
+  totalCredit: 0,
   customers: [],
     summary: null,
   form: {
@@ -576,7 +599,24 @@ const bookingSlice = createSlice({
       .addCase(receiveCustomerPayment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchInvoicesByFilter.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+     .addCase(fetchInvoicesByFilter.fulfilled, (state, action) => {
+  state.loading = false;
+  state.data = action.payload.data;
+  state.count = action.payload.count;
+  state.totalDebit = action.payload.totalDebit || 0;
+  state.totalCredit = action.payload.totalCredit || 0;
+})
+
+      .addCase(fetchInvoicesByFilter.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
+      ;
       
   }
 })
