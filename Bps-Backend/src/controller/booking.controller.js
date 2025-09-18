@@ -9,7 +9,7 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { generateInvoiceNumber } from "../utils/invoiceNumber.js";
 import { generateInvoicePDF } from "../utils/invoiceGenerator.js"; // adjust path
 import moment from 'moment';
-
+import {ApiError} from "../utils/ApiError.js"
 import {asyncHandler} from "../utils/asyncHandler.js";
 import mongoose from "mongoose"
 async function resolveStation(name) {
@@ -1320,11 +1320,7 @@ export const getAllCustomersPendingAmounts = async (req, res) => {
   try {
     // Step 1: Aggregate only delivered bookings
     const customerPayments = await Booking.aggregate([
-      {
-        $match: {
-          isDelivered: true // Filter only delivered bookings
-        }
-      },
+     
       {
   $group: {
     _id: "$customerId",
@@ -1435,7 +1431,6 @@ export const receiveCustomerPayment = asyncHandler(async (req, res) => {
   // Step 1: Fetch all delivered bookings with pending amount for this customer
   const bookings = await Booking.find({
     customerId,
-    isDelivered: true,
     $expr: { $lt: ["$paidAmount", "$grandTotal"] } // paidAmount < grandTotal
   }).sort({ bookingDate: 1 }); // Oldest first
 
@@ -1471,7 +1466,7 @@ export const receiveCustomerPayment = asyncHandler(async (req, res) => {
     {
       $match: {
         customerId: bookings[0].customerId,
-        isDelivered: true
+        
       }
     },
     {

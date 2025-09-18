@@ -257,18 +257,18 @@ export const receiveCustomerPayment = createAsyncThunk(
   "bookings/receiveCustomerPayment",
   async ({ customerId, amount }, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${BASE_URL}/payment/${customerId}`, {
-        amount
-      });
+      const res = await axios.post(`${BASE_URL}/payment/${customerId}`, { amount });
       return {
         customerId,
-        paymentResponse: res.data
+        paymentData: res.data.data   // ✅ only the "data" object
       };
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      console.error("Payment failed:", err);
+      return rejectWithValue(err.response?.data || { message: err.message });
     }
   }
 );
+
 export const fetchInvoicesByFilter = createAsyncThunk(
   "invoices/fetchByFilter",
   async ({ fromDate, toDate, startStation }, { rejectWithValue }) => {
@@ -577,25 +577,26 @@ const bookingSlice = createSlice({
         state.error = null;
       })
       .addCase(receiveCustomerPayment.fulfilled, (state, action) => {
-        state.loading = false;
-        const { customerId, paymentResponse } = action.payload;
+  state.loading = false;
+  const { customerId, paymentData } = action.payload;
 
-        // Update local state instantly
-        const updatedStats = paymentResponse.data.updatedStats;
-        const customerIndex = state.customers.findIndex(
-          (c) => c.customerId === customerId
-        );
+  // Update local state instantly
+  const updatedStats = paymentData.updatedStats;
+  const customerIndex = state.customers.findIndex(
+    (c) => c.customerId === customerId
+  );
 
-        if (customerIndex !== -1 && updatedStats) {
-          state.customers[customerIndex] = {
-            ...state.customers[customerIndex],
-            unpaidBookings: updatedStats.unpaidBookings,
-            totalAmount: updatedStats.totalAmount,
-            totalPaid: updatedStats.totalPaid,
-            pendingAmount: updatedStats.pendingAmount
-          };
-        }
-      })
+  if (customerIndex !== -1 && updatedStats) {
+    state.customers[customerIndex] = {
+      ...state.customers[customerIndex],
+      unpaidBookings: updatedStats.unpaidBookings,
+      totalAmount: updatedStats.totalAmount,
+      totalPaid: updatedStats.totalPaid,
+      pendingAmount: updatedStats.pendingAmount,
+    };
+  }
+})
+
       .addCase(receiveCustomerPayment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
