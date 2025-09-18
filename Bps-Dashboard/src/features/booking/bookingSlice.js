@@ -286,6 +286,34 @@ export const fetchInvoicesByFilter = createAsyncThunk(
     }
   }
 );
+export const restoreBooking = createAsyncThunk(
+  "bin/restoreBooking",
+  async (bookingId, thunkApi) => {
+    try {
+      const res = await axios.patch(`${BASE_URL}/${bookingId}/restore`);
+      return res.data.booking; // full booking object
+    } catch (err) {
+      return thunkApi.rejectWithValue(
+        err.response?.data?.message || "Failed to restore booking"
+      );
+    }
+  }
+);
+
+// ✅ List all deleted bookings (bin list)
+export const listDeletedBookings = createAsyncThunk(
+  "bin/listDeletedBookings",
+  async (_, thunkApi) => {
+    try {
+      const res = await axios.get(`${BASE_URL}/bin/list`);
+      return res.data.bookings; // array of bookings
+    } catch (err) {
+      return thunkApi.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch deleted bookings"
+      );
+    }
+  }
+);
 const initialState = {
   list: [],
   list2: [],
@@ -616,8 +644,35 @@ const bookingSlice = createSlice({
       .addCase(fetchInvoicesByFilter.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(restoreBooking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(restoreBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        // remove restored booking from bin
+        state.deletedBookings = state.deletedBookings.filter(
+          (b) => b.bookingId !== action.payload.bookingId
+        );
+      })
+      .addCase(restoreBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(listDeletedBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(listDeletedBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.deletedBookings = action.payload;
+      })
+      .addCase(listDeletedBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
-      ;
+      
       
   }
 })
